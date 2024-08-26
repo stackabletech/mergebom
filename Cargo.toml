@@ -1,0 +1,10 @@
+[package]
+name = "mergebom"
+description = "This tool deduplicates components in CycloneDX BOMs, that were both found via Syft's java-archive-cataloger and sbom-cataloger."
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cyclonedx-bom = "0.7.0"
