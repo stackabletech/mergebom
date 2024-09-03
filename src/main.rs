@@ -23,6 +23,33 @@ fn main() {
     // Merge components that have the same PURL
     merge_duplicate_components(&mut bom, &grouped_components);
 
+    let parent_component_bom_ref = bom
+        .metadata
+        .as_ref()
+        .and_then(|m| m.component.as_ref().and_then(|c| c.bom_ref.as_ref()))
+        .unwrap();
+
+    let all_dependencies = bom.dependencies.get_or_insert_with(|| Dependencies(vec![]));
+    let mut parentless_components = vec![];
+
+    // For each component without a parent, add a dependency to the parent_component_bom_ref
+    if let Some(components) = bom.components.as_ref() {
+        for component in &components.0 {
+            if !all_dependencies
+                .0
+                .iter()
+                .any(|d| d.dependencies.contains(&component.bom_ref.clone().unwrap()))
+            {
+                parentless_components.push(component.bom_ref.clone().unwrap());
+            }
+        }
+    }
+
+    all_dependencies.0.push(Dependency {
+        dependency_ref: parent_component_bom_ref.clone(),
+        dependencies: parentless_components,
+    });
+
     // Find components with `type` == "operating-system" and change the value of their `name` attribute to "redhat" if it is "rhel"
     // This is currently needed since Trivy won't recognize "rhel" as a known operating system
     if let Some(components) = bom.components.as_mut() {
