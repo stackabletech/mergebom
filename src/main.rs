@@ -2,7 +2,7 @@ use cyclonedx_bom::{
     models::{component::Classification, dependency::{Dependencies, Dependency}},
     prelude::*,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 fn main() {
     if std::env::args().count() != 3 {
@@ -161,6 +161,25 @@ fn merge_duplicate_components(
                 }
                 true
             });
+            // Now that dependencies are updated by update_dependencies, there might be duplicate dependencies
+            // Example: If component A (SBOM component) and B (non-SBOM component found by java-archive-cataloger) are actually the same and merged into A,
+            // dependencies from B are updated to point to A. Those dependencies might already be in the list of dependencies of A. So these lists need to be deduplicated.
+
+            // Find entries in dependencies that have the same dependency_ref
+            let mut dedup_map = HashMap::new();
+            if let Some(dependencies) = bom.dependencies.as_mut() {
+                for dependency in &dependencies.0 {
+                    let entry = dedup_map.entry(&dependency.dependency_ref).or_insert_with(HashSet::new);
+                    entry.extend(dependency.dependencies.clone().into_iter());
+                }
+                dependencies.0 = dedup_map
+                    .into_iter()
+                    .map(|(k, v)| Dependency {
+                        dependency_ref: k.to_string(),
+                        dependencies: v.into_iter().collect(),
+                    })
+                    .collect();
+            }
         }
     }
 }
