@@ -1,12 +1,18 @@
 use cyclonedx_bom::{
-    models::{component::Classification, dependency::{Dependencies, Dependency}},
+    models::{
+        component::Classification,
+        dependency::{Dependencies, Dependency},
+    },
     prelude::*,
 };
 use std::collections::{HashMap, HashSet};
 
 fn main() {
     if std::env::args().count() != 3 {
-        eprintln!("Usage: {} <input-bom> <output-bom>", std::env::args().next().unwrap());
+        eprintln!(
+            "Usage: {} <input-bom> <output-bom>",
+            std::env::args().next().unwrap()
+        );
         std::process::exit(1);
     }
 
@@ -54,7 +60,9 @@ fn main() {
     // This is currently needed since Trivy won't recognize "rhel" as a known operating system
     if let Some(components) = bom.components.as_mut() {
         for component in &mut components.0 {
-            if component.component_type == Classification::OperatingSystem && (component.name.as_ref() as &str) == "rhel" {
+            if component.component_type == Classification::OperatingSystem
+                && (component.name.as_ref() as &str) == "rhel"
+            {
                 component.name = "redhat".into();
             }
         }
@@ -169,7 +177,9 @@ fn merge_duplicate_components(
             let mut dedup_map = HashMap::new();
             if let Some(dependencies) = bom.dependencies.as_mut() {
                 for dependency in &dependencies.0 {
-                    let entry = dedup_map.entry(&dependency.dependency_ref).or_insert_with(HashSet::new);
+                    let entry = dedup_map
+                        .entry(&dependency.dependency_ref)
+                        .or_insert_with(HashSet::new);
                     entry.extend(dependency.dependencies.clone());
                 }
                 dependencies.0 = dedup_map
