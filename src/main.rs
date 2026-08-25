@@ -170,7 +170,7 @@ fn merge_duplicate_components(
             if let Some(dependencies) = bom.dependencies.as_mut() {
                 for dependency in &dependencies.0 {
                     let entry = dedup_map.entry(&dependency.dependency_ref).or_insert_with(HashSet::new);
-                    entry.extend(dependency.dependencies.clone().into_iter());
+                    entry.extend(dependency.dependencies.clone());
                 }
                 dependencies.0 = dedup_map
                     .into_iter()
