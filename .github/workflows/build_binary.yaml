@@ -31,13 +31,15 @@ jobs:
           cosign sign-blob -y ./target/release/mergebom --bundle=./target/release/mergebom_signature.bundle
 
       - name: Determine Architecture
+        id: arch
         run: |
-          echo "ARCH=$(arch)" >> "$GITHUB_ENV"
+          echo "ARCH=$(arch)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Upload signature and binary to Nexus
         env:
           NEXUS_USERNAME: github
           NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+          ARCH: ${{ steps.arch.outputs.ARCH }}
         run: |
           curl -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
             --upload-file ./target/release/mergebom \
