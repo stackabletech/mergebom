@@ -47,4 +47,4 @@ jobs:
 
           curl -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
             --upload-file ./target/release/mergebom_signature.bundle \
-            "https://repo.stackable.tech/repository/packages/mergebom/stable-$ARCH_signature.bundle"
+            "https://repo.stackable.tech/repository/packages/mergebom/stable-${ARCH}_signature.bundle"
