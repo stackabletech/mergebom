@@ -19,15 +19,21 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
       - name: Set up Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-      - run: cargo build --release
+
+      - name: Build release binary
+        run: cargo build --release
+
       - name: Sign binary with cosign
         run: |
           cosign sign-blob -y ./target/release/mergebom --bundle=./target/release/mergebom_signature.bundle
+
       - name: Determine Architecture
         run: |
           echo "ARCH=$(arch)" >> "$GITHUB_ENV"
+
       - name: Upload signature and binary to Nexus
         env:
           NEXUS_USERNAME: github
@@ -36,6 +42,7 @@ jobs:
           curl -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
             --upload-file ./target/release/mergebom \
             "https://repo.stackable.tech/repository/packages/mergebom/stable-$ARCH"
+
           curl -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
             --upload-file ./target/release/mergebom_signature.bundle \
             "https://repo.stackable.tech/repository/packages/mergebom/stable-$ARCH_signature.bundle"
