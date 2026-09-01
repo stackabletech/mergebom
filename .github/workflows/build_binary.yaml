@@ -1,4 +1,5 @@
 name: Build and push binary
+permissions: {}
 
 on:
   push:
@@ -8,31 +9,42 @@ on:
 jobs:
   build_image:
     permissions:
-      id-token: write
+      id-token: write # Needed for cosign keyless signing
     strategy:
       matrix:
         runner: ["ubuntu-latest", "ubicloud-standard-8-arm"]
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
       - name: Set up Cosign
-        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # tag=v3.5.0
-      - run: cargo build --release
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Build release binary
+        run: cargo build --release
+
       - name: Sign binary with cosign
         run: |
           cosign sign-blob -y ./target/release/mergebom --bundle=./target/release/mergebom_signature.bundle
+
       - name: Determine Architecture
+        id: arch
         run: |
-          echo "ARCH=$(arch)" >> "$GITHUB_ENV"
+          echo "ARCH=$(arch)" | tee -a "$GITHUB_OUTPUT"
+
       - name: Upload signature and binary to Nexus
         env:
           NEXUS_USERNAME: github
           NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+          ARCH: ${{ steps.arch.outputs.ARCH }}
         run: |
           curl -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
             --upload-file ./target/release/mergebom \
-            https://repo.stackable.tech/repository/packages/mergebom/stable-${{ env.ARCH }}
+            "https://repo.stackable.tech/repository/packages/mergebom/stable-$ARCH"
+
           curl -u $NEXUS_USERNAME:$NEXUS_PASSWORD \
             --upload-file ./target/release/mergebom_signature.bundle \
-            https://repo.stackable.tech/repository/packages/mergebom/stable-${{ env.ARCH }}_signature.bundle
+            "https://repo.stackable.tech/repository/packages/mergebom/stable-${ARCH}_signature.bundle"
